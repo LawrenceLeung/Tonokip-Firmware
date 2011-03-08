@@ -30,73 +30,39 @@ const bool DISABLE_E = false;
 
 const bool INVERT_X_DIR = false;
 const bool INVERT_Y_DIR = false;
-const bool INVERT_Z_DIR = true;
+const bool INVERT_Z_DIR = false;
 const bool INVERT_E_DIR = false;
+
+//homing settings
+const int homedistance = 250;
+const long xysearchrate = 2000;
+const long zsearchrate = 70;
 
 //Endstop Settings
 	//if you do not have max hardware endstops, it defaults to software endstops, defined by the max length numbers.
 	//if you do not have min hardware endstops, the firmware will not move to lengths less than 0
 //#define USE_INTERNAL_PULLUPS
 const bool ENDSTOPS_INVERTING = true;
-const bool x_max_hardware = false;
+//const bool x_max_hardware = false;
 const bool x_min_hardware = true;
 const int X_MAX_LENGTH = 212;
-const bool y_max_hardware = false;
+//const bool y_max_hardware = false;
 const bool y_min_hardware = true;
 const int Y_MAX_LENGTH = 205;
-const bool z_max_hardware = false;
+//const bool z_max_hardware = false;
 const bool z_min_hardware = true;
 const int Z_MAX_LENGTH = 70;
 
 
 //Temperature Control Settings
 const int nozzle_check = 500; //this defines how many milliseconds between checking nozzle temp
-const int hbp_check = 1000; //this defines how many milliseconds between checking heated build platform temp
-//nothing below this works yet :)
-  //const int chamber_check = 1000; //This defines how many milliseconds between checking chamber temp
-  //const bool servo_inverting = true; //Inverts the servo direction (PWM value) on the chamber vent
-//#define PWMNOZZLE //for the nozzle pwm stuff
-//const char HEATER_0_LOW = 85;
-//const char HEATER_0_HIGH = 255;
-//const char HEATER_0_OFF = 0;
+const int hbp_check = 3000; //this defines how many milliseconds between checking heated build platform temp
 
 //serial settings
 #define BAUDRATE 115200
 #define SENDSTART //comment out on windows machines. sends "start" when booting up.
 
-
-//compilation defines
-	// these will reduce the compile size of tonokips so we might be able to get it on an Uno
 //#define LINENUM
 //#define CHECKSUM
 //#define ECHOING
-	//okok
-// G0 -> G1
-// G1  - Coordinated Movement X Y Z E
-// G4  - Dwell S<seconds> or P<milliseconds>
-// G90 - Use Absolute Coordinates
-// G91 - Use Relative Coordinates
-// G92 - Set current position to cordinates given
-
-//RepRap M Codes
-// M104 - Set target temp
-// M105 - Read current temp
-// M106 - Fan on
-// M107 - Fan off
-// M109 - Wait for nozzle current temp to reach target temp.
-// M112 - Emergency Stop
-// M114 - Get Current Position	
-// M115 - Get Firmware Version and Capabilities		
-// M116 - Wait for nozzle AND Bed to get up to target temp     
-// M140 - Set heated bed temp
-// M141 - Set chamber temp		**Still working on this one.
-
-//Custom M Codes
-// M80  - Turn on Power Supply
-// M81  - Turn off Power Supply
-// M82  - Set E codes absolute (default)
-// M83  - Set E codes relative while in Absolute Coordinates (G90) mode
-// M84  - Disable steppers until next move
-// M85  - Set inactivity shutdown timer with parameter S<seconds>. To disable set zero (default)
-// M92  - Set axis_steps_per_unit - same syntax as G92
 

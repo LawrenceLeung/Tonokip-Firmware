@@ -13,6 +13,7 @@
 // G0 -> G1
 // G1  - Coordinated Movement X Y Z E
 // G4  - Dwell S<seconds> or P<milliseconds>
+// G28 - Go home. Moves XYZ at once to min endstops. Not [0,0,0].
 // G90 - Use Absolute Coordinates
 // G91 - Use Relative Coordinates
 // G92 - Set current position to cordinates given
@@ -121,7 +122,6 @@ void loop()
   get_command();
   manage_heater();
   manage_bed_heater();
- // manage_inactivity(1); //shutdown if not receiving any new commands
 }
 
 inline void get_command() 
@@ -262,6 +262,50 @@ inline void process_commands()
 			manage_bed_heater();
 		}
         break;
+      case 28:
+              x_steps_to_take = homedistance * x_steps_per_unit;
+              y_steps_to_take = homedistance * y_steps_per_unit;
+              z_steps_to_take = homedistance * z_steps_per_unit;
+              x_interval = ((float)x_steps_to_take / (x_steps_per_unit*xysearchrate/60000000))/x_steps_to_take;
+              y_interval = ((float)y_steps_to_take / (y_steps_per_unit*xysearchrate/60000000))/y_steps_to_take;
+              z_interval = ((float)z_steps_to_take / (z_steps_per_unit*zsearchrate/60000000))/z_steps_to_take;
+              enable_x();
+              enable_y();
+              enable_z();
+          while(x_steps_to_take > 0 || y_steps_to_take > 0 || z_steps_to_take > 0) 
+  { 
+    if(x_steps_to_take) {
+      if ((micros()-previous_micros_x) >= x_interval) { do_x_step(); x_steps_to_take--; }
+        if(x_min_hardware) if(X_MIN_PIN > -1) if(!direction_x) if(digitalRead(X_MIN_PIN) != ENDSTOPS_INVERTING){ x_steps_to_take=0; current_x = 0.0;}
+        
+    }
+    
+    if(y_steps_to_take) {
+      if ((micros()-previous_micros_y) >= y_interval) { do_y_step(); y_steps_to_take--; }
+      if(y_min_hardware) if(Y_MIN_PIN > -1) if(!direction_y) if(digitalRead(Y_MIN_PIN) != ENDSTOPS_INVERTING){ y_steps_to_take=0; current_y = 0.0;}
+    }
+    
+    if(z_steps_to_take) {
+      if ((micros()-previous_micros_z) >= z_interval) { do_z_step(); z_steps_to_take--; }
+      if(z_min_hardware) if(Z_MIN_PIN > -1) if(!direction_z) if(digitalRead(Z_MIN_PIN) != ENDSTOPS_INVERTING){ z_steps_to_take=0; current_z = 0.0;}
+    }    
+    
+    if( (millis() - previous_millis_heater) >= nozzle_check ) {
+      manage_heater();
+      previous_millis_heater = millis();
+
+    }
+	if( (millis() - previous_millis_bed_heater) >= hbp_check ) {
+      
+	manage_bed_heater();
+      previous_millis_bed_heater = millis();
+      
+    }
+  }
+        disable_x();
+        disable_y();
+        disable_z();
+        break;
       case 90: // G90
         relative_mode = false;
         break;
@@ -327,10 +371,6 @@ inline void process_commands()
 	case 140: // M140
         if (code_seen('S')) bed_target_raw = temp2analog(code_value());
         break;
-	//case 140: // M141
-       // if (code_seen('S')) chamber_target_raw = temp2analog(code_value());
-	//manage_chamber();
-       // break;
       case 106: //M106 - Fan On
         digitalWrite(FAN_PIN, HIGH);
         break;
@@ -420,24 +460,10 @@ inline void get_coordinates()
     next_feedrate = code_value();
     if(next_feedrate > 0.0) feedrate = next_feedrate;
   }
-  
-  //Find direction
-  if(destination_x >= current_x) direction_x=1;
-  else direction_x=0;
-  if(destination_y >= current_y) direction_y=1;
-  else direction_y=0;
-  if(destination_z >= current_z) direction_z=1;
-  else direction_z=0;
-  if(destination_e >= current_e) direction_e=1;
-  else direction_e=0;
-  
-  if(!x_min_hardware) if (destination_x < 0.0) destination_x = 0.0;
-  if(!y_min_hardware) if (destination_y < 0.0) destination_y = 0.0;
-  if(!z_min_hardware) if (destination_z < 0.0) destination_z = 0.0;
 
-  if(!x_max_hardware) if (destination_x > X_MAX_LENGTH) destination_x = X_MAX_LENGTH;
-  if(!y_max_hardware) if (destination_y > Y_MAX_LENGTH) destination_y = Y_MAX_LENGTH;
-  if(!z_max_hardware) if (destination_z > Z_MAX_LENGTH) destination_z = Z_MAX_LENGTH;
+//  if(!x_max_hardware) if (destination_x > X_MAX_LENGTH) destination_x = X_MAX_LENGTH;
+//  if(!y_max_hardware) if (destination_y > Y_MAX_LENGTH) destination_y = Y_MAX_LENGTH;
+//  if(!z_max_hardware) if (destination_z > Z_MAX_LENGTH) destination_z = Z_MAX_LENGTH;
   
   if(feedrate > max_feedrate) feedrate = max_feedrate;
 }
@@ -460,35 +486,20 @@ void linear_move(unsigned long x_steps_remaining, unsigned long y_steps_remainin
   if(z_steps_remaining) enable_z();
   if(e_steps_remaining) enable_e();
 
-  if(x_min_hardware) if(X_MIN_PIN > -1) if(!direction_x) if(digitalRead(X_MIN_PIN) != ENDSTOPS_INVERTING) x_steps_remaining=0;
-  if(y_min_hardware) if(Y_MIN_PIN > -1) if(!direction_y) if(digitalRead(Y_MIN_PIN) != ENDSTOPS_INVERTING) y_steps_remaining=0;
-  if(z_min_hardware) if(Z_MIN_PIN > -1) if(!direction_z) if(digitalRead(Z_MIN_PIN) != ENDSTOPS_INVERTING) z_steps_remaining=0;
-  if(x_max_hardware) if(X_MAX_PIN > -1) if(direction_x) if(digitalRead(X_MAX_PIN) != ENDSTOPS_INVERTING) x_steps_remaining=0;
-  if(y_max_hardware) if(Y_MAX_PIN > -1) if(direction_y) if(digitalRead(Y_MAX_PIN) != ENDSTOPS_INVERTING) y_steps_remaining=0;
-  if(z_max_hardware) if(Z_MAX_PIN > -1) if(direction_z) if(digitalRead(Z_MAX_PIN) != ENDSTOPS_INVERTING) z_steps_remaining=0;
-
   previous_millis_heater = millis();
   previous_millis_bed_heater = millis();
   while(x_steps_remaining > 0 || y_steps_remaining > 0 || z_steps_remaining > 0 || e_steps_remaining > 0) // move until no more steps remain 
-	//SK 2010.12.25 - The above compiled 2 bytes smaller. I wonder why it was commented out?
-  //while(x_steps_remaining + y_steps_remaining + z_steps_remaining + e_steps_remaining > 0) // move until no more steps remain
   { 
     if(x_steps_remaining) {
       if ((micros()-previous_micros_x) >= x_interval) { do_x_step(); x_steps_remaining--; }
-      if(x_min_hardware) if(X_MIN_PIN > -1) if(!direction_x) if(digitalRead(X_MIN_PIN) != ENDSTOPS_INVERTING) x_steps_remaining=0;
-      if(x_max_hardware) if(X_MAX_PIN > -1) if(direction_x) if(digitalRead(X_MAX_PIN) != ENDSTOPS_INVERTING) x_steps_remaining=0;
     }
     
     if(y_steps_remaining) {
       if ((micros()-previous_micros_y) >= y_interval) { do_y_step(); y_steps_remaining--; }
-      if(y_min_hardware) if(Y_MIN_PIN > -1) if(!direction_y) if(digitalRead(Y_MIN_PIN) != ENDSTOPS_INVERTING) y_steps_remaining=0;
-      if(y_max_hardware) if(Y_MAX_PIN > -1) if(direction_y) if(digitalRead(Y_MAX_PIN) != ENDSTOPS_INVERTING) y_steps_remaining=0;
     }
     
     if(z_steps_remaining) {
       if ((micros()-previous_micros_z) >= z_interval) { do_z_step(); z_steps_remaining--; }
-      if(z_min_hardware) if(Z_MIN_PIN > -1) if(!direction_z) if(digitalRead(Z_MIN_PIN) != ENDSTOPS_INVERTING) z_steps_remaining=0;
-      if(z_max_hardware) if(Z_MAX_PIN > -1) if(direction_z) if(digitalRead(Z_MAX_PIN) != ENDSTOPS_INVERTING) z_steps_remaining=0;
     }    
     
     if(e_steps_remaining) if ((micros()-previous_micros_e) >= e_interval) { do_e_step(); e_steps_remaining--; }
@@ -496,15 +507,13 @@ void linear_move(unsigned long x_steps_remaining, unsigned long y_steps_remainin
     if( (millis() - previous_millis_heater) >= nozzle_check ) {
       manage_heater();
       previous_millis_heater = millis();
-      
-      //manage_inactivity(2);
+
     }
 	if( (millis() - previous_millis_bed_heater) >= hbp_check ) {
       
 	manage_bed_heater();
       previous_millis_bed_heater = millis();
       
-      //manage_inactivity(2);
     }
   }
   
@@ -582,15 +591,6 @@ inline void manage_heater()
   if(nozzle_current_raw >= nozzle_target_raw) digitalWrite(HEATER_0_PIN, LOW);
   else digitalWrite(HEATER_0_PIN, HIGH);
 
-#ifdef PWM_NOZZLE
-	//	if (target_raw <= 50) {
-	//	analogWrite(HEATER_0_PIN,HEATER_0_OFF);
-	//	} else {
-	//	if(current_raw >= target_raw) {
-//	analogWrite(HEATER_0_PIN,HEATER_0_LOW);
-//	} else {
-//	analogWrite(HEATER_0_PIN, HEATER_0_HIGH);
-#endif
 }
 
 inline void manage_bed_heater()
@@ -697,6 +697,3 @@ inline void kill(byte debug)
 
 }
 
-//inline void manage_inactivity(byte debug) { 
-//	if( (millis()-previous_millis_cmd) >  max_inactive_time ) if(max_inactive_time) kill(debug); 
-//		}
