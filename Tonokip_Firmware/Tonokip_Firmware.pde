@@ -272,6 +272,9 @@ inline void process_commands()
               enable_x();
               enable_y();
               enable_z();
+		digitalWrite(X_DIR_PIN,INVERT_X_DIR);
+		digitalWrite(Y_DIR_PIN,INVERT_Y_DIR);
+		digitalWrite(Z_DIR_PIN,INVERT_Z_DIR);
           while(x_steps_to_take > 0 || y_steps_to_take > 0 || z_steps_to_take > 0) 
   { 
     if(x_steps_to_take) {
