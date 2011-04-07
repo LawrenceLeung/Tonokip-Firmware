@@ -42,15 +42,15 @@ const long zsearchrate = 70;
 	//if you do not have max hardware endstops, it defaults to software endstops, defined by the max length numbers.
 	//if you do not have min hardware endstops, the firmware will not move to lengths less than 0
 //#define USE_INTERNAL_PULLUPS
-const bool ENDSTOPS_INVERTING = true;
+const bool ENDSTOPS_INVERTING = true; 
 //const bool x_max_hardware = false;
-const bool x_min_hardware = true;
+const bool x_min_hardware = false;
 const int X_MAX_LENGTH = 212;
 //const bool y_max_hardware = false;
-const bool y_min_hardware = true;
+const bool y_min_hardware = false;
 const int Y_MAX_LENGTH = 205;
 //const bool z_max_hardware = false;
-const bool z_min_hardware = true;
+const bool z_min_hardware = false;
 const int Z_MAX_LENGTH = 70;
 
 
@@ -59,7 +59,7 @@ const int nozzle_check = 500; //this defines how many milliseconds between check
 const int hbp_check = 3000; //this defines how many milliseconds between checking heated build platform temp
 
 //serial settings
-#define BAUDRATE 115200
+#define BAUDRATE 57600 //115200
 #define SENDSTART //comment out on windows machines. sends "start" when booting up.
 
 //#define LINENUM
